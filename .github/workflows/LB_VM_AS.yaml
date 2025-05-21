@@ -1,0 +1,71 @@
+name: CI/CD LB_VM_AS (Multiple)
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'Test/LB_VM_AS/**'
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'Test/LB_VM_AS/**'
+
+env:
+  DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }} 
+  IMAGE_NAME: azure-lb-vm-fastapi
+  VM1_HOST: ${{ secrets.VM1_HOST }} 
+  VM1_USERNAME: ${{ secrets.VM1_USERNAME }} 
+  VM1_PW: ${{ secrets.VM1_PW }} 
+  VM2_HOST: ${{ secrets.VM2_HOST }} 
+  VM2_USERNAME: ${{ secrets.VM2_USERNAME }} 
+  VM2_PW: ${{ secrets.VM2_PW }} 
+
+jobs:
+  build_and_push:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ env.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: ${{ env.DOCKERHUB_USERNAME }}/${{ env.IMAGE_NAME }}:latest
+
+  deploy:
+    needs: build_and_push
+    runs-on: ubuntu-latest
+    steps:
+        - name: Deploy to VM1
+          uses: appleboy/ssh-action@v1
+          with:
+                host: ${{ env.VM1_HOST }}
+                username: ${{ env.VM1_USERNAME }}
+                key: ${{ env.VM1_SSH_KEY }}
+                script: |
+                  docker pull ${{ env.DOCKERHUB_USERNAME }}/${{ env.IMAGE_NAME }}:latest
+                  docker stop my-fastapi-container || true
+                  docker rm my-fastapi-container || true
+                  docker run -d -p 80:80 --name my-fastapi-container ${{ env.DOCKERHUB_USERNAME }}/${{ env.IMAGE_NAME }}:latest
+
+        - name: Deploy to VM2
+          uses: appleboy/ssh-action@v1
+          with:
+                host: ${{ env.VM2_HOST }}
+                username: ${{ env.VM2_USERNAME }}
+                key: ${{ env.VM2_SSH_KEY }}
+                script: |
+                  docker pull ${{ env.DOCKERHUB_USERNAME }}/${{ env.IMAGE_NAME }}:latest
+                  docker stop my-fastapi-container || true
+                  docker rm my-fastapi-container || true
+                  docker run -d -p 80:80 --name my-fastapi-container ${{ env.DOCKERHUB_USERNAME }}/${{ env.IMAGE_NAME }}:latest
