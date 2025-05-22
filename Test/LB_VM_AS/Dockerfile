@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1
 # 1. 빌더 스테이지: 개발 환경을 구축하고 종속성을 설치합니다[2][7].
-FROM python:3.13-slim-buster AS builder
+FROM python:3.12-slim-buster AS builder
 
 # 2. 작업 디렉토리 설정[7].
 WORKDIR .
@@ -19,7 +19,7 @@ RUN poetry config virtualenvs.create false && poetry install --no-interaction --
 COPY . ./app
 
 # 7. 최종 스테이지: 최소한의 런타임 환경을 구성합니다[2][7].
-FROM python:3.13-slim-buster AS release
+FROM python:3.12-slim-buster AS release
 
 # 8. 작업 디렉토리 설정[7].
 WORKDIR /app
