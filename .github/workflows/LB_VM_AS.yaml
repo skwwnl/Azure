@@ -13,14 +13,16 @@ on:
       - 'Test/LB_VM_AS/**'
 
 env:
-  DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }} 
+  # Docker 관련 설정
+  DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
   IMAGE_NAME: azure-lb-vm-fastapi
-  VM1_HOST: ${{ secrets.VM1_HOST }} 
-  VM1_USERNAME: ${{ secrets.VM1_USERNAME }} 
-  VM1_PW: ${{ secrets.VM1_PW }} 
-  VM2_HOST: ${{ secrets.VM2_HOST }} 
-  VM2_USERNAME: ${{ secrets.VM2_USERNAME }} 
-  VM2_PW: ${{ secrets.VM2_PW }} 
+  CONTAINER_NAME: my-fastapi-container
+  
+  # VM 설정은 이제 secrets에서 직접 참조합니다.
+  
+  # 배포 타겟 설정
+  TARGET_DOCKERHUB_REPO_OWNER: ${{ secrets.DOCKERHUB_USERNAME }}
+  TARGET_IMAGE_NAME: IMAGE_NAME
 
 jobs:
   build_and_push:
@@ -38,34 +40,51 @@ jobs:
       - name: Build and push Docker image
         uses: docker/build-push-action@v5
         with:
-          context: .
+          context: Test/LB_VM_AS
           push: true
           tags: ${{ env.DOCKERHUB_USERNAME }}/${{ env.IMAGE_NAME }}:latest
 
-  deploy:
+  deploy_vm1:
     needs: build_and_push
     runs-on: ubuntu-latest
     steps:
-        - name: Deploy to VM1
-          uses: appleboy/ssh-action@v1
-          with:
-                host: ${{ env.VM1_HOST }}
-                username: ${{ env.VM1_USERNAME }}
-                key: ${{ env.VM1_SSH_KEY }}
-                script: |
-                  docker pull ${{ env.DOCKERHUB_USERNAME }}/${{ env.IMAGE_NAME }}:latest
-                  docker stop my-fastapi-container || true
-                  docker rm my-fastapi-container || true
-                  docker run -d -p 80:80 --name my-fastapi-container ${{ env.DOCKERHUB_USERNAME }}/${{ env.IMAGE_NAME }}:latest
+      - name: Deploy to VM1
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ env.VM1_HOST }}
+          username: ${{ env.VM1_USERNAME }}
+          password: ${{ env.VM1_PW }}
+          script: |
+            echo "Deploying application to VM1..."
+            # Docker 이미지 풀
+            docker pull ${{ env.TARGET_DOCKERHUB_REPO_OWNER }}/${{ env.TARGET_IMAGE_NAME }}:latest
 
-        - name: Deploy to VM2
-          uses: appleboy/ssh-action@v1
-          with:
-                host: ${{ env.VM2_HOST }}
-                username: ${{ env.VM2_USERNAME }}
-                key: ${{ env.VM2_SSH_KEY }}
-                script: |
-                  docker pull ${{ env.DOCKERHUB_USERNAME }}/${{ env.IMAGE_NAME }}:latest
-                  docker stop my-fastapi-container || true
-                  docker rm my-fastapi-container || true
-                  docker run -d -p 80:80 --name my-fastapi-container ${{ env.DOCKERHUB_USERNAME }}/${{ env.IMAGE_NAME }}:latest
+            # 기존 컨테이너 중지 및 제거 (오류 발생해도 계속 진행)
+            docker stop ${{ env.CONTAINER_NAME }} || true
+            docker rm ${{ env.CONTAINER_NAME }} || true
+
+            # 새 이미지로 컨테이너 실행
+            docker run -d -p 80:80 --name ${{ env.CONTAINER_NAME }} ${{ env.TARGET_DOCKERHUB_REPO_OWNER }}/${{ env.TARGET_IMAGE_NAME }}:latest
+
+  deploy_vm2:
+    needs: build_and_push
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy to VM2
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ env.VM2_HOST }}
+          username: ${{ env.VM2_USERNAME }}
+          password: ${{ env.VM2_PW }}
+          script: |
+            echo "Deploying application to VM2..."
+            # Docker 이미지 풀
+            docker pull ${{ env.TARGET_DOCKERHUB_REPO_OWNER }}/${{ env.TARGET_IMAGE_NAME }}:latest
+
+            # 기존 컨테이너 중지 및 제거 (오류 발생해도 계속 진행)
+            docker stop ${{ env.CONTAINER_NAME }} || true
+            docker rm ${{ env.CONTAINER_NAME }} || true
+
+            # 새 이미지로 컨테이너 실행
+            docker run -d -p 80:80 --name ${{ env.CONTAINER_NAME }} ${{ env.TARGET_DOCKERHUB_REPO_OWNER }}/${{ env.TARGET_IMAGE_NAME }}:latest
+            echo "Deployment to VM ${{ matrix.vm_config.id }} completed."
