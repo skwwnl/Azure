@@ -28,7 +28,6 @@ env:
   
   # 배포 타겟 설정
   TARGET_DOCKERHUB_REPO_OWNER: ${{ secrets.DOCKERHUB_USERNAME }}
-  TARGET_IMAGE_NAME: IMAGE_NAME
 
 jobs:
   build_and_push:
@@ -70,7 +69,7 @@ jobs:
             docker rm ${{ env.CONTAINER_NAME }} || true
 
             # 새 이미지로 컨테이너 실행
-            docker run -d -p 80:8000 --name ${{ env.CONTAINER_NAME }} ${{ env.TARGET_DOCKERHUB_REPO_OWNER }}/${{ env.IMAGE_NAME }}:latest
+            docker run -d -p 80:8000 --name ${{ env.CONTAINER_NAME }} ${{ secrets.DOCKERHUB_USERNAME }}/${{ env.IMAGE_NAME }}:latest
 
   deploy_vm2:
     needs: build_and_push
@@ -92,4 +91,4 @@ jobs:
             docker rm ${{ env.CONTAINER_NAME }} || true
 
             # 새 이미지로 컨테이너 실행
-            docker run -d -p 80:8000 --name ${{ env.CONTAINER_NAME }} ${{ env.TARGET_DOCKERHUB_REPO_OWNER }}/${{ env.IMAGE_NAME }}:latest
+            docker run -d -p 80:8000 --name ${{ env.CONTAINER_NAME }} ${{ secrets.DOCKERHUB_USERNAME }}/${{ env.IMAGE_NAME }}:latest
