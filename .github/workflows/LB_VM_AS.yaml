@@ -16,9 +16,15 @@ env:
   # Docker 관련 설정
   DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
   IMAGE_NAME: azure-lb-vm-fastapi
-  CONTAINER_NAME: my-fastapi-container
+  CONTAINER_NAME: LB_VM_AS
   
-  # VM 설정은 이제 secrets에서 직접 참조합니다.
+  VM1_HOST: ${{ secrets.VM1_HOST }}
+  VM1_USERNAME: ${{ secrets.VM1_USERNAME }}
+  VM1_PW: ${{ secrets.VM1_PW }}
+  
+  VM2_HOST: ${{ secrets.VM2_HOST }}
+  VM2_USERNAME: ${{ secrets.VM2_USERNAME }}
+  VM2_PW: ${{ secrets.VM2_PW }}
   
   # 배포 타겟 설정
   TARGET_DOCKERHUB_REPO_OWNER: ${{ secrets.DOCKERHUB_USERNAME }}
@@ -51,20 +57,20 @@ jobs:
       - name: Deploy to VM1
         uses: appleboy/ssh-action@v1
         with:
-          host: ${{ env.VM1_HOST }}
-          username: ${{ env.VM1_USERNAME }}
-          password: ${{ env.VM1_PW }}
+          host: ${{ secrets.VM1_HOST }}
+          username: ${{ secrets.VM1_USERNAME }}
+          password: ${{ secrets.VM1_PW }}
           script: |
             echo "Deploying application to VM1..."
             # Docker 이미지 풀
-            docker pull ${{ env.TARGET_DOCKERHUB_REPO_OWNER }}/${{ env.TARGET_IMAGE_NAME }}:latest
+            docker pull ${{ secrets.DOCKERHUB_USERNAME }}/${{ env.IMAGE_NAME  }}:latest
 
             # 기존 컨테이너 중지 및 제거 (오류 발생해도 계속 진행)
             docker stop ${{ env.CONTAINER_NAME }} || true
             docker rm ${{ env.CONTAINER_NAME }} || true
 
             # 새 이미지로 컨테이너 실행
-            docker run -d -p 80:80 --name ${{ env.CONTAINER_NAME }} ${{ env.TARGET_DOCKERHUB_REPO_OWNER }}/${{ env.TARGET_IMAGE_NAME }}:latest
+            docker run -d -p 80:8000 --name ${{ env.CONTAINER_NAME }} ${{ env.TARGET_DOCKERHUB_REPO_OWNER }}/${{ env.IMAGE_NAME }}:latest
 
   deploy_vm2:
     needs: build_and_push
@@ -73,18 +79,17 @@ jobs:
       - name: Deploy to VM2
         uses: appleboy/ssh-action@v1
         with:
-          host: ${{ env.VM2_HOST }}
-          username: ${{ env.VM2_USERNAME }}
-          password: ${{ env.VM2_PW }}
+          host: ${{ secrets.VM2_HOST }}
+          username: ${{ secrets.VM2_USERNAME }}
+          password: ${{ secrets.VM2_PW }}
           script: |
             echo "Deploying application to VM2..."
             # Docker 이미지 풀
-            docker pull ${{ env.TARGET_DOCKERHUB_REPO_OWNER }}/${{ env.TARGET_IMAGE_NAME }}:latest
+            docker pull ${{ secrets.DOCKERHUB_USERNAME }}/${{ env.IMAGE_NAME  }}:latest
 
             # 기존 컨테이너 중지 및 제거 (오류 발생해도 계속 진행)
             docker stop ${{ env.CONTAINER_NAME }} || true
             docker rm ${{ env.CONTAINER_NAME }} || true
 
             # 새 이미지로 컨테이너 실행
-            docker run -d -p 80:80 --name ${{ env.CONTAINER_NAME }} ${{ env.TARGET_DOCKERHUB_REPO_OWNER }}/${{ env.TARGET_IMAGE_NAME }}:latest
-            echo "Deployment to VM ${{ matrix.vm_config.id }} completed."
+            docker run -d -p 80:8000 --name ${{ env.CONTAINER_NAME }} ${{ env.TARGET_DOCKERHUB_REPO_OWNER }}/${{ env.IMAGE_NAME }}:latest
