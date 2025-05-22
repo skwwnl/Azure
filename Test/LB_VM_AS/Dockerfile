@@ -23,4 +23,4 @@ RUN uv pip install --system --no-cache-dir -r requirements.txt
 # 소스 코드 복사
 COPY . .
 
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
