@@ -10,8 +10,8 @@ RUN curl -LsSf -o /tmp/install_uv.sh https://astral.sh/uv/install.sh && \
     sh /tmp/install_uv.sh && \
     rm /tmp/install_uv.sh
 
-# uv 실행 경로 환경변수 추가
-ENV PATH="/root/.local/bin:$PATH"
+# # uv 실행 경로 환경변수 추가
+# ENV PATH="/root/.local/bin:$PATH"
 
 WORKDIR /app
 
