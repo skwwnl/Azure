@@ -15,7 +15,7 @@ RUN pip install --no-cache-dir --upgrade -r /code/requirements.txt
 
 # 5. 애플리케이션 코드 복사: FastAPI 애플리케이션 코드가 있는 디렉토리(예: ./app)를
 #    컨테이너의 작업 디렉토리 내의 app 디렉토리로 복사합니다.
-COPY ./app /code/app
+COPY . /code
 
 # 6. 컨테이너 실행 명령: 컨테이너가 시작될 때 실행될 명령을 지정합니다.
 #    fastapi run 명령어를 사용하여 app/main.py 파일 내의 FastAPI 애플리케이션을 실행합니다.
