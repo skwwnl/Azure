@@ -4,7 +4,14 @@ FROM python:3.12-alpine AS builder
 
 # 필수 패키지 설치 및 uv 설치
 RUN apk add --no-cache build-base curl
-RUN curl -LsSf https://astral.sh/uv/install.sh | sh
+
+# uv 설치
+RUN curl -LsSf -o /tmp/install_uv.sh https://astral.sh/uv/install.sh && \
+    sh /tmp/install_uv.sh && \
+    rm /tmp/install_uv.sh
+
+# uv 실행 경로 환경변수 추가
+ENV PATH="/root/.local/bin:$PATH"
 
 WORKDIR /app
 
